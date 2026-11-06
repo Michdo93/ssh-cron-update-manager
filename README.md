@@ -17,7 +17,6 @@ Make sure you have Python 3 and the required dependencies installed:
 
 ```bash
 pip install paramiko
-
 ```
 
 ## Usage
@@ -26,14 +25,12 @@ pip install paramiko
 
 ```bash
 python3 manager.py --host 192.168.1.50 --user root
-
 ```
 
 ### 2. Scan a subnet and update all discovered Linux hosts
 
 ```bash
 python3 manager.py --subnet 192.168.1.0/24 --user root
-
 ```
 
 ## License
