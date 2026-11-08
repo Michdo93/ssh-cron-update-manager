@@ -1,37 +1,58 @@
 # SSH Cron Update Manager
 
-A powerful management utility written in Python that automatically rolls out your [cron-update-manager](https://github.com/Michdo93/cron-update-manager) to one or multiple remote Linux hosts over SSH. 
+Rolls out [cron-update-manager](https://github.com/Michdo93/cron-update-manager) (daily
+`apt` updates at 03:00 via cron) to remote Debian-based Linux hosts over SSH.
 
-It supports targeting a **single host** via command-line arguments or **scanning an entire local subnet** to automatically discover and provision active Linux machines.
+Two tools:
 
-## Features
+| | `deploy-cron-updates.sh` (interactive) | `manager.py` (non-interactive) |
+|---|---|---|
+| Targets | IPv4 range (first/last address) | one host or a subnet (CIDR) |
+| Discovery | SSH probe on TCP 22 (no ping) | SSH banner on TCP 22 (no ping) |
+| Per device | confirm, user name, up to 3 logins | same user/password for all |
+| sudo | password typed in the remote prompt | SSH password is used for `sudo -S` |
+| Requires | Bash 4, `ssh`, `timeout`, `xargs`, `base64` | Python 3, `paramiko` |
 
-* **Targeted or Automated Discovery:** Update a specific IP/hostname or scan your subnet automatically.
-* **Smart SSH Connection Handling:** Supports standard SSH keys or interactive password prompts via `paramiko`.
-* **Linux Validation:** Automatically checks if a remote target is running Linux before attempting execution.
-* **Remote Automation:** Executes your remote `cron-update-manager` installation script seamlessly via a single pipeline command (`wget ... | sh`).
+Targets need an SSH server (e.g. [ssh-bootstrap-kit](https://github.com/Michdo93/ssh-bootstrap-kit)),
+Internet access and an account that is root or may use `sudo`. Root login is not required.
 
-## Prerequisites
+## Interactive: `deploy-cron-updates.sh`
 
-Make sure you have Python 3 and the required dependencies installed:
+Works like [ssh-dns-manager](https://github.com/Michdo93/ssh-dns-manager) and
+[ssh-hostname-manager](https://github.com/Michdo93/ssh-hostname-manager).
+
+```bash
+chmod +x deploy-cron-updates.sh
+./deploy-cron-updates.sh
+```
+
+1. Enter the first and last IPv4 address and confirm the range.
+2. The range is scanned for SSH servers (32 parallel probes; no host keys are stored while scanning).
+3. For each device: confirm, enter the SSH user name, log in (up to three attempts, then the
+   next device). The installer output is shown live; `sudo` asks for its password in the same
+   terminal.
+4. At the end the installed and the failed devices are listed.
+
+Environment options: `SSH_PORT` (22), `CONNECT_TIMEOUT` (4), `SCAN_PARALLEL` (32),
+`INSTALLER_URL` (cron-update-manager's `install.sh` on GitHub).
+
+## Non-interactive: `manager.py`
 
 ```bash
 pip install paramiko
-```
 
-## Usage
+# single host, sudo user (the SSH password is also used for sudo)
+python3 manager.py --host 192.168.1.50 --user pi
 
-### 1. Update a single host
-
-```bash
-python3 manager.py --host 192.168.1.50 --user root
-```
-
-### 2. Scan a subnet and update all discovered Linux hosts
-
-```bash
+# all SSH hosts of a subnet as root
 python3 manager.py --subnet 192.168.1.0/24 --user root
+
+# key login; asks for the sudo password (Enter if sudo needs none)
+python3 manager.py --subnet 192.168.1.0/24 --user admin --key ~/.ssh/id_ed25519
 ```
+
+Options: `--host` | `--subnet`, `--user` (default `root`), `--password`, `--key`, `--port` (22).
+The exit code is `1` if at least one host failed.
 
 ## License
 
